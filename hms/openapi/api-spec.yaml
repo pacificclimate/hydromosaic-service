@@ -1,0 +1,230 @@
+openapi: '3.0.2'
+
+info:
+  title: Hydromosaic Service API
+  description: Get metadata and data for stream timeseries
+  version: '0.1'
+
+servers:
+  - url: http://localhost:5000
+    description: local dev server
+  - url: https://services.pacificclimate.org/hydromosaic-service
+    description: Production server
+
+tags:
+  - name: Outlet
+    description: a stream or lake outlet for which timeseries data is available
+  - name: Timeseries
+    description: a series of values of a particular variable at consecutive timestamps at one outlet
+  - name: Variable
+    description: a type of simulated or measured data
+  - name: Model
+    description: A General Circulation Model, Regional Circulation Model, or aggregeated ensemble thereof
+  - name: Scenario
+    description: A Shared Socioeconomic Pathway or Representative Concentration Pathway
+
+paths:
+  /outlets:
+    get:
+      summary: list all available outlets
+      description: Get a list of subIDs for all outlets for which timeseries data is available
+      tags:
+        - Outlet
+      operationId: hms.api.outlets.list_outlets
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      description: subID for this outlet
+                      type: string
+                    uri:
+                      description: uri for this resource
+                      type: string
+                      format: uri
+
+
+  /outlets/{subid}:
+    get:
+      summary: metadata for an outlet
+      description: get detailed metadata about this outlet
+      tags:
+        - Outlet
+        - Timeseries
+      operationId: hms.api.outlets.outlet
+      responses:
+        200:
+          description: Success
+          content: 
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    description: subID for this outlet
+                    type: string
+                  uri:
+                    description: uri for this resource
+                    type: string
+                    format: uri
+                  timeseries:
+                    description: metadata describing timeseries available at this outlet
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Timeseries'
+
+
+  /outlets/{subid}/timeseries: 
+    get:
+      summary: timeseries available at an outlet
+      description: get a list of timeseries available at this outlet
+      tags:
+        - Outlet
+        - Timeseries
+      operationId: hms.api.timeseries.list_timeseries
+      responses:
+        200:
+          description: success
+          content: 
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Timeseries'
+
+
+  /outlets/{subid}/timeseries/{ts_id}:
+    get:
+      summary: timeseries metadata
+      description: get metadata about a specific timeseries
+      tags:
+        - Timeseries
+      operationId: hms.api.timeseries.timeseries
+      responses:
+        200:
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Timeseries'
+
+
+  /outlets/{subid}/timeseries/{ts_id}/data:
+    get:
+      summary: timeseries data
+      description: get a CSV file containing this timeseries
+      tags:
+        - Timeseries
+      operationId: hms.api.timeseries.timeseries_data
+      responses:
+        200:
+          description: success
+          content:
+            text/plain:
+              schema:
+                type: string
+
+  /variables:
+    get:
+      summary: variables available
+      description: get a list of all variables for which timeseries data is availanle
+      tags:
+        - Variable
+      operationId: hms.api.variables.list_variables
+      responses:
+        200:
+          description: success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Variable'
+
+  /variables/{v_id}:
+    get:
+      summary: variable metadata
+      description: get metadata about a specific variable
+      tags:
+        - Variable
+      operationId: hms.api.variables.variable
+      responses:
+        200:
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Variable'
+
+
+components:
+  schemas:
+    Variable:
+      description: metadata describing a variable
+      type: object
+      properties:
+        id:
+          description: name of this variable
+          type: string
+        uri:
+          description: URI for this variable
+          type: string
+          format: uri
+        units:
+          description: variable units
+          type: string
+        long_name:
+          description: description of this variable
+          type: string
+    Timeseries:
+      description: metadata describing a timeseries
+      type: object
+      properties:
+        id:
+          description: Unique ID of this timeseries
+          type: number
+        uri:
+          description: URI for this timeseries
+          type: string
+          format: uri
+        data_uri:
+          description: URI for this timeseries' data
+          type: string
+          format: uri
+        variable:
+          description: the type of measurement this timeseries records or simulates
+          type: string
+        variable_uri:
+          description: URI for the variable of this timeseries
+          type: string
+          format: uri
+        outlet:
+          description: the location at which this timeseries was simulated or recorded
+          type: string
+        outlet_uri:
+          description: URI for the outlet this timeseries was simulated or recorded at
+          type: string
+          format: uri
+        scenario:
+          description: Shared Socioeconomic Pathway or Representative Concentration Pathway
+          type: string
+        model:
+          description: General Circulation Model, Regional Circulation Model, or ensemble
+          type: string
+        start_time:
+          description: first timestamp in the timeseries
+          type: string
+          format: date-time
+        end_time:
+          description: last timestamp in the timeseries
+          type: string
+          format: date-time
+        num_times:
+          description: number of timestamps in the timeseries
+          type: number

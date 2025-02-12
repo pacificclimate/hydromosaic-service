@@ -1,0 +1,25 @@
+[tool.poetry]
+name = "hms"
+version = "0.1.0"
+description = "Data server for the second iteration of SCIP"
+authors = [
+  "James Hiebert <hiebert@uvic.ca>",
+  "Quintin Sparks <quintins@uvic.ca>",
+  "Lee Zeman <lzeman@uvic.ca>"
+]
+license = "GPL-3.0"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+flask = "^3.1.0"
+flask-sqlalchemy = "^3.1.1"
+psycopg2 = "^2.9.10"
+flask-cors = "^5.0.0"
+connexion = {extras = ["swagger-ui", "flask", "uvicorn"], version = "^3.1.0"}
+uvicorn = "^0.34.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
