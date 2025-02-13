@@ -14,7 +14,7 @@ def list_variables():
             "long_name": "Simulated outflows",
         },
         {
-            "id": "q_in",
+            "id": "q_obs",
             "uri": "/variables/q_obs",
             "units": "m**3 s**-1",
             "long_name": "Observed outflows",

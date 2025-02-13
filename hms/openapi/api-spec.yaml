@@ -19,7 +19,7 @@ tags:
   - name: Variable
     description: a type of simulated or measured data
   - name: Model
-    description: A General Circulation Model, Regional Circulation Model, or aggregeated ensemble thereof
+    description: A General Circulation Model, Regional Circulation Model, or aggregated ensemble thereof
   - name: Scenario
     description: A Shared Socioeconomic Pathway or Representative Concentration Pathway
 
@@ -126,14 +126,14 @@ paths:
         200:
           description: success
           content:
-            text/plain:
+            text/csv:
               schema:
                 type: string
 
   /variables:
     get:
       summary: variables available
-      description: get a list of all variables for which timeseries data is availanle
+      description: get a list of all variables for which timeseries data is available
       tags:
         - Variable
       operationId: hms.api.variables.list_variables
@@ -227,4 +227,4 @@ components:
           format: date-time
         num_times:
           description: number of timestamps in the timeseries
-          type: number
+          type: integer
