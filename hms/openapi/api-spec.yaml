@@ -52,6 +52,13 @@ paths:
 
   /outlets/{subid}:
     get:
+      parameters:
+        - name: subid
+          in: path
+          description: identification code for outlet to return
+          required: true
+          schema:
+            type: string
       summary: metadata for an outlet
       description: get detailed metadata about this outlet
       tags:
@@ -82,6 +89,13 @@ paths:
 
   /outlets/{subid}/timeseries: 
     get:
+      parameters:
+        - name: subid
+          in: path
+          description: identification code for outlet to return
+          required: true
+          schema:
+            type: string
       summary: timeseries available at an outlet
       description: get a list of timeseries available at this outlet
       tags:
@@ -101,6 +115,20 @@ paths:
 
   /outlets/{subid}/timeseries/{ts_id}:
     get:
+      parameters:
+        - name: subid
+          in: path
+          description: identification code for outlet to return
+          required: true
+          schema:
+            type: string
+        - name: ts_id
+          in: path
+          description: identification code for timeseries to return
+          required: true
+          schema:
+            type: integer
+            format: int64
       summary: timeseries metadata
       description: get metadata about a specific timeseries
       tags:
@@ -117,6 +145,20 @@ paths:
 
   /outlets/{subid}/timeseries/{ts_id}/data:
     get:
+      parameters:
+        - name: subid
+          in: path
+          description: identification code for outlet to return
+          required: true
+          schema:
+            type: string
+        - name: ts_id
+          in: path
+          description: identification code for timeseries to return
+          required: true
+          schema:
+            type: integer
+            format: int64
       summary: timeseries data
       description: get a CSV file containing this timeseries
       tags:
@@ -149,6 +191,13 @@ paths:
 
   /variables/{v_id}:
     get:
+      parameters:
+        - name: v_id
+          in: path
+          description: short name of variable to return
+          required: true
+          schema:
+            type: string
       summary: variable metadata
       description: get metadata about a specific variable
       tags:
