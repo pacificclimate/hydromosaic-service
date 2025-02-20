@@ -18,6 +18,7 @@ psycopg2 = "^2.9.10"
 flask-cors = "^5.0.0"
 connexion = {extras = ["swagger-ui", "flask", "uvicorn"], version = "^3.1.0"}
 uvicorn = "^0.34.0"
+hydromosaic = {git = "https://github.com/pacificclimate/hydromosaic-db.git", rev = "downgrade-python"}
 
 
 [build-system]
