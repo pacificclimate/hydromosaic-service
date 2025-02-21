@@ -1,19 +1,11 @@
+from hydromosaic.database import Outlet 
+from hms import get_app_session
+
 def list_outlets():
     """For now, return dummy data"""
-    return [
-        {"id": "sub4008275", "uri": "/outlets/sub4008275"},
-        {"id": "sub4000665", "uri": "/outlets/sub4000665"},
-        {"id": "sub4000732", "uri": "/outlets/sub4000732"},
-        {"id": "sub4012087", "uri": "/outlets/sub4012087"},
-        {"id": "sub4000652", "uri": "/outlets/sub4000652"},
-        {"id": "sub4012058", "uri": "/outlets/sub4012058"},
-        {"id": "sub4012102", "uri": "/outlets/sub4012102"},
-        {"id": "sub4008291", "uri": "/outlets/sub4008291"},
-        {"id": "sub4008124", "uri": "/outlets/sub4008124"},
-        {"id": "sub4000740", "uri": "/outlets/sub4000740"},
-        {"id": "sub4012067", "uri": "/outlets/sub4012067"},
-        {"id": "sub4012070", "uri": "/outlets/sub4012070"},
-    ]
+    outlets = get_app_session().query(Outlet).all()
+    
+    return( [{"id": o.code, "uri": f"/outlets/{o.code}"} for o in outlets])
 
 
 def outlet(subid):
