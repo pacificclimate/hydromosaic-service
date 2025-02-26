@@ -18,13 +18,13 @@ def create_app():
         SQLALCHEMY_DATABASE_URI=os.getenv("HMS_DSN", ""),
         SQLALCHEMY_TRACK_MODIFICATIONS=False,
         SQLALCHEMY_ECHO=False,
-        )
+    )
     app_db = SQLAlchemy(flask_app)
-
 
     connexion_app.add_api("api-spec.yaml")
 
     return connexion_app, flask_app, app_db
+
 
 def get_app_session():
     return app_db.session
