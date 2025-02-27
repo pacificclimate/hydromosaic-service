@@ -101,7 +101,7 @@ paths:
       tags:
         - Outlet
         - Timeseries
-      operationId: hms.api.timeseries.list_timeseries
+      operationId: hms.api.outlets.list_timeseries
       responses:
         200:
           description: success
@@ -133,7 +133,7 @@ paths:
       description: get metadata about a specific timeseries
       tags:
         - Timeseries
-      operationId: hms.api.timeseries.timeseries
+      operationId: hms.api.outlets.timeseries
       responses:
         200:
           description: success
@@ -163,7 +163,7 @@ paths:
       description: get a CSV file containing this timeseries
       tags:
         - Timeseries
-      operationId: hms.api.timeseries.timeseries_data
+      operationId: hms.api.data.timeseries_data
       responses:
         200:
           description: success
