@@ -678,8 +678,8 @@ sqlalchemy = "^2.0.36"
 [package.source]
 type = "git"
 url = "https://github.com/pacificclimate/hydromosaic-db.git"
-reference = "downgrade-python"
-resolved_reference = "4db0d428748c0ec5f284c0ca5814f1afdcc4a3f9"
+reference = "HEAD"
+resolved_reference = "bf09282168e6c71e4f58ca3089c10129df24c46f"
 
 [[package]]
 name = "idna"
@@ -1772,4 +1772,4 @@ watchdog = ["watchdog (>=2.3)"]
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.10"
-content-hash = "68866e6cc01ba809ec5ceff10e86edf9f645786d7fcc7b30d7cbe92fea969a0d"
+content-hash = "ebb3738bfd9b90b7350f8a80c520902088800676bb9667ced5a2663dd60c6870"
