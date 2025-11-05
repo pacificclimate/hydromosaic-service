@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "hms"
-version = "0.1.0"
+version = "0.2.0"
 description = "Data server for the second iteration of SCIP"
 authors = [
   "James Hiebert <hiebert@uvic.ca>",
