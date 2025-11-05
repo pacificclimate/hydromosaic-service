@@ -5,21 +5,21 @@ description = "Data server for the second iteration of SCIP"
 authors = [
   "James Hiebert <hiebert@uvic.ca>",
   "Quintin Sparks <quintins@uvic.ca>",
-  "Lee Zeman <lzeman@uvic.ca>"
+  "Lee Zeman <lzeman@uvic.ca>",
 ]
 license = "GPL-3.0"
 readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.10"
-flask = "^3.1.0"
+flask = "^3.1.2"
 flask-sqlalchemy = "^3.1.1"
-psycopg2 = "^2.9.10"
-flask-cors = "^5.0.0"
-connexion = {extras = ["swagger-ui", "flask", "uvicorn"], version = "^3.1.0"}
+psycopg2 = "^2.9.11"
+flask-cors = "^6.0.1"
+connexion = { extras = ["swagger-ui", "flask", "uvicorn"], version = "^3.3.0" }
 uvicorn = "^0.34.0"
-hydromosaic = {git = "https://github.com/pacificclimate/hydromosaic-db.git"}
-netcdf4 = "^1.7.2"
+hydromosaic = { git = "https://github.com/pacificclimate/hydromosaic-db.git" }
+netcdf4 = "^1.7.3"
 
 
 [build-system]
