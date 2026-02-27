@@ -4,9 +4,14 @@ from hms import get_app_session
 from datetime import datetime, timedelta
 
 
-def time_string(reference, hours):
-	return (reference + timedelta(hours = hours)).strftime("%Y-%m-%d %H:%M:%S")
-	
+
+def time_string(reference, units, increment):
+    if units == "hours":
+        return (reference + timedelta(hours = increment)).strftime("%Y-%m-%d %H:%M:%S")
+    elif units == "days":
+        return (reference + timedelta(days = increment)).strftime("%Y-%m-%d %H:%M:%S")
+    else:
+        raise ValueError(f"Unknown time units: {units}")
 
 def timeseries_data(subid, ts_id):
     """Return a timeseries in CSV format, one metadata table and one timeseries table"""
@@ -33,8 +38,17 @@ def timeseries_data(subid, ts_id):
     header = f"Time, {var.standard_name} ({nc.variables[var.standard_name].units})\n"
 
     outlet_index = nc.variables["basin_name"][:].tolist().index(subid)
-    reference_time = datetime.strptime(nc.variables['time'].units, "hours since %Y-%m-%d %H:%M:%S")
-    timestamps = [time_string(reference_time, t) for t in nc.variables["time"][:]]
+    # timestamps may be given in either hours or days
+    if "hours since" in nc.variables['time'].units:
+        reference_time = datetime.strptime(nc.variables['time'].units, "hours since %Y-%m-%d %H:%M:%S")
+        time_units = "hours"
+    elif "days since" in nc.variables['time'].units:
+        reference_time = datetime.strptime(nc.variables['time'].units, "days since %Y-%m-%d %H:%M:%S")
+        time_units = "days"
+    else:
+        raise ValueError(f"Unknown time units: {nc.variables['time'].units}")
+
+    timestamps = [time_string(reference_time, time_units, t) for t in nc.variables["time"][:]]
     data = nc.variables[var.standard_name][0 : len(timestamps), outlet_index]
 
     data_rows = [f"{timestamps[i]}, {data[i]}" for i in range(len(timestamps))]
