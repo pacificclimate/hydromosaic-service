@@ -1,6 +1,6 @@
 # Copied with minor modifications from wx-files-service
 
-FROM ubuntu:22.04
+FROM ubuntu:24.04
 
 LABEL maintainer="Lee Zeman <lzeman@uvic.ca>"
 
