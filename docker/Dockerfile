@@ -2,7 +2,7 @@
 
 FROM ubuntu:22.04
 
-MAINTAINER Lee Zeman <lzeman@uvic.ca>
+LABEL maintainer="Lee Zeman <lzeman@uvic.ca>"
 
 ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && \
@@ -23,9 +23,9 @@ RUN poetry install
 
 EXPOSE 8000
 
-ENV FLASK_APP hms.asgi
-ENV FLASK_ENV development
-ENV LC_ALL C.UTF-8
-ENV LANG C.UTF-8
+ENV FLASK_APP=hms.asgi
+ENV FLASK_ENV=development
+ENV LC_ALL=C.UTF-8
+ENV LANG=C.UTF-8
 
-CMD poetry run uvicorn --port 8000 --host 0.0.0.0 --reload hms.asgi:connexion_app
+CMD ["poetry", "run", "uvicorn", "--port", "8000", "--host", "0.0.0.0", "--workers", "4", "hms.asgi:connexion_app"]
