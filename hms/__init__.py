@@ -18,6 +18,10 @@ def create_app():
         SQLALCHEMY_DATABASE_URI=os.getenv("HMS_DSN", ""),
         SQLALCHEMY_TRACK_MODIFICATIONS=False,
         SQLALCHEMY_ECHO=False,
+        SQLALCHEMY_ENGINE_OPTIONS={
+            "pool_pre_ping": True,
+            "pool_recycle": int(os.getenv("HMS_DB_POOL_RECYCLE", "3600")),
+        },
     )
     app_db = SQLAlchemy(flask_app)
 
