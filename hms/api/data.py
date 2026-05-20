@@ -2,7 +2,7 @@ import os
 from datetime import datetime, timedelta
 from functools import lru_cache
 
-from flask import current_app
+from flask import Response, current_app, stream_with_context
 from hydromosaic.database import Outlet, Timeseries, Variable, Scenario, Model, Datafile
 from netCDF4 import Dataset
 from hms import get_app_session
@@ -46,6 +46,21 @@ def basin_name_index_map(parent_dir):
     raise ValueError(f"No basin_name variable found in NetCDF files under {parent_dir}")
 
 
+def time_reference_and_units(time_units_string):
+    if "hours since" in time_units_string:
+        return (
+            datetime.strptime(time_units_string, "hours since %Y-%m-%d %H:%M:%S"),
+            "hours",
+        )
+    elif "days since" in time_units_string:
+        return (
+            datetime.strptime(time_units_string, "days since %Y-%m-%d %H:%M:%S"),
+            "days",
+        )
+    else:
+        raise ValueError(f"Unknown time units: {time_units_string}")
+
+
 def timeseries_data(subid, ts_id):
     """Return a timeseries in CSV format, one metadata table and one timeseries table"""
 
@@ -77,39 +92,29 @@ def timeseries_data(subid, ts_id):
         f"\n"
     )
 
-    # Fetch data from netCDF file, build data table
-    with Dataset(filename) as nc:
-        header = f"Time, {variable_name} ({nc.variables[variable_name].units})\n"
+    @stream_with_context
+    def generate_rows():
+        yield metadata
 
-        basin_names = nc.variables["basin_name"]
-        outlet_index = basin_name_index_map(os.path.dirname(filename))[subid]
-        basin_name = basin_name_string(basin_names[outlet_index])
-        if basin_name != subid:
-            current_app.logger.warning(
-                "Cached basin index mismatch for subid %s in %s; rebuilding from file",
-                subid,
-                filename,
-            )
-            outlet_index = basin_name_index_map_from_values(basin_names)[subid]
-        # timestamps may be given in either hours or days
-        if "hours since" in nc.variables["time"].units:
-            reference_time = datetime.strptime(
-                nc.variables["time"].units, "hours since %Y-%m-%d %H:%M:%S"
-            )
-            time_units = "hours"
-        elif "days since" in nc.variables["time"].units:
-            reference_time = datetime.strptime(
-                nc.variables["time"].units, "days since %Y-%m-%d %H:%M:%S"
-            )
-            time_units = "days"
-        else:
-            raise ValueError(f"Unknown time units: {nc.variables['time'].units}")
+        with Dataset(filename) as nc:
+            yield f"Time, {variable_name} ({nc.variables[variable_name].units})\n"
 
-        timestamps = [
-            time_string(reference_time, time_units, t) for t in nc.variables["time"][:]
-        ]
-        data = nc.variables[variable_name][0 : len(timestamps), outlet_index]
+            basin_names = nc.variables["basin_name"]
+            outlet_index = basin_name_index_map(os.path.dirname(filename))[subid]
+            basin_name = basin_name_string(basin_names[outlet_index])
+            if basin_name != subid:
+                current_app.logger.warning(
+                    "Cached basin index mismatch for subid %s in %s; rebuilding from file",
+                    subid,
+                    filename,
+                )
+                outlet_index = basin_name_index_map_from_values(basin_names)[subid]
 
-    data_rows = [f"{timestamps[i]}, {data[i]}" for i in range(len(timestamps))]
+            reference_time, time_units = time_reference_and_units(nc.variables["time"].units)
+            time_values = nc.variables["time"][:]
+            data_values = nc.variables[variable_name][0 : len(time_values), outlet_index]
 
-    return metadata + header + "\n".join(data_rows)
+            for time_value, data_value in zip(time_values, data_values):
+                yield f"{time_string(reference_time, time_units, time_value)}, {data_value}\n"
+
+    return Response(generate_rows(), mimetype="text/csv")
