@@ -7,6 +7,8 @@ from hydromosaic.database import Outlet, Timeseries, Variable, Scenario, Model, 
 from netCDF4 import Dataset
 from hms import get_app_session
 
+ROW_CHUNK_SIZE = int(os.getenv("HMS_NETCDF_ROW_CHUNK_SIZE", "4096"))
+
 
 def time_string(reference, units, increment):
     if units == "hours":
@@ -30,7 +32,7 @@ def basin_name_index_map_from_values(basin_names):
     }
 
 
-@lru_cache(maxsize=32) #32 directory paths
+@lru_cache(maxsize=32) # 32 directory paths
 def basin_name_index_map(parent_dir):
     for entry in sorted(os.scandir(parent_dir), key=lambda item: item.name):
         if not entry.is_file() or not entry.name.endswith((".nc")):
@@ -110,11 +112,16 @@ def timeseries_data(subid, ts_id):
                 )
                 outlet_index = basin_name_index_map_from_values(basin_names)[subid]
 
-            reference_time, time_units = time_reference_and_units(nc.variables["time"].units)
-            time_values = nc.variables["time"][:]
-            data_values = nc.variables[variable_name][0 : len(time_values), outlet_index]
+            time_variable = nc.variables["time"]
+            reference_time, time_units = time_reference_and_units(time_variable.units)
+            num_rows = len(time_variable)
 
-            for time_value, data_value in zip(time_values, data_values):
-                yield f"{time_string(reference_time, time_units, time_value)}, {data_value}\n"
+            for start in range(0, num_rows, ROW_CHUNK_SIZE):
+                stop = min(start + ROW_CHUNK_SIZE, num_rows)
+                time_values = time_variable[start:stop]
+                data_values = nc.variables[variable_name][start:stop, outlet_index]
+
+                for time_value, data_value in zip(time_values, data_values):
+                    yield f"{time_string(reference_time, time_units, time_value)}, {data_value}\n"
 
     return Response(generate_rows(), mimetype="text/csv")
