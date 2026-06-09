@@ -7,21 +7,25 @@ LABEL maintainer="Lee Zeman <lzeman@uvic.ca>"
 ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && \
     apt-get -yq install \
+        curl \
         libpq-dev \
         python3 \
         python3-dev \
+        pipx \
         python3-pip \
-        postgresql-client \
-	wget
+        postgresql-client
 
 ADD . /app
 WORKDIR /app
 
-RUN wget -O - https://install.python-poetry.org | python3 -
+RUN pipx install poetry
 ENV PATH=/root/.local/bin:$PATH
 RUN poetry install
 
 EXPOSE 8000
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:8000/readyz || exit 1
 
 ENV FLASK_APP=hms.asgi
 ENV FLASK_ENV=development
