@@ -1,4 +1,28 @@
-# Copied with minor modifications from wx-files-service
+FROM ubuntu:24.04 AS builder
+
+ARG DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && \
+    apt-get -yq install \
+    build-essential \
+    libpq-dev \
+    pipx \
+    python3 \
+    python3-dev && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+ENV PATH=/root/.local/bin:$PATH
+
+RUN pipx install poetry
+
+COPY pyproject.toml poetry.lock README.md ./
+COPY hms ./hms
+
+RUN poetry config virtualenvs.in-project true && \
+    poetry install --only main
+
 
 FROM ubuntu:24.04
 
@@ -7,29 +31,24 @@ LABEL maintainer="Lee Zeman <lzeman@uvic.ca>"
 ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && \
     apt-get -yq install \
-        curl \
-        libpq-dev \
-        python3 \
-        python3-dev \
-        pipx \
-        python3-pip \
-        postgresql-client
+    curl \
+    libpq5 \
+    python3 \
+    postgresql-client && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
-ADD . /app
 WORKDIR /app
 
-RUN pipx install poetry
-ENV PATH=/root/.local/bin:$PATH
-RUN poetry install
+COPY --from=builder /app /app
+
+ENV PATH=/app/.venv/bin:$PATH
+ENV LC_ALL=C.UTF-8
+ENV LANG=C.UTF-8
 
 EXPOSE 8000
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
     CMD curl -f http://localhost:8000/readyz || exit 1
 
-ENV FLASK_APP=hms.asgi
-ENV FLASK_ENV=development
-ENV LC_ALL=C.UTF-8
-ENV LANG=C.UTF-8
-
-CMD ["poetry", "run", "uvicorn", "--port", "8000", "--host", "0.0.0.0", "--workers", "4", "hms.asgi:connexion_app"]
+CMD ["uvicorn", "--port", "8000", "--host", "0.0.0.0", "--workers", "4", "hms.asgi:connexion_app"]
