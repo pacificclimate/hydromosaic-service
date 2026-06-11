@@ -1,8 +1,8 @@
 # Copied with minor modifications from wx-files-service
 
-FROM ubuntu:22.04
+FROM ubuntu:24.04
 
-MAINTAINER Lee Zeman <lzeman@uvic.ca>
+LABEL org.opencontainers.image.authors="Lee Zeman <lzeman@uvic.ca>"
 
 ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && \
