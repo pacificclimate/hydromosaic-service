@@ -26,7 +26,7 @@ RUN poetry config virtualenvs.in-project true && \
 
 FROM ubuntu:24.04
 
-LABEL maintainer="Lee Zeman <lzeman@uvic.ca>"
+LABEL org.opencontainers.image.authors="Lee Zeman <lzeman@uvic.ca>"
 
 ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && \
