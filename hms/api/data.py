@@ -1,56 +1,127 @@
+import os
+from datetime import datetime, timedelta
+from functools import lru_cache
+
+from flask import Response, current_app, stream_with_context
 from hydromosaic.database import Outlet, Timeseries, Variable, Scenario, Model, Datafile
 from netCDF4 import Dataset
 from hms import get_app_session
-from datetime import datetime, timedelta
 
+ROW_CHUNK_SIZE = int(os.getenv("HMS_NETCDF_ROW_CHUNK_SIZE", "4096"))
 
 
 def time_string(reference, units, increment):
     if units == "hours":
-        return (reference + timedelta(hours = increment)).strftime("%Y-%m-%d %H:%M:%S")
+        return (reference + timedelta(hours=increment)).strftime("%Y-%m-%d %H:%M:%S")
     elif units == "days":
-        return (reference + timedelta(days = increment)).strftime("%Y-%m-%d %H:%M:%S")
+        return (reference + timedelta(days=increment)).strftime("%Y-%m-%d %H:%M:%S")
     else:
         raise ValueError(f"Unknown time units: {units}")
+
+
+def basin_name_string(value):
+    if isinstance(value, bytes):
+        return value.decode("utf-8").strip()
+    return str(value).strip()
+
+
+def basin_name_index_map_from_values(basin_names):
+    return {
+        basin_name_string(value): index
+        for index, value in enumerate(basin_names[:].tolist())
+    }
+
+
+@lru_cache(maxsize=32) # 32 directory paths
+def basin_name_index_map(parent_dir):
+    for entry in sorted(os.scandir(parent_dir), key=lambda item: item.name):
+        if not entry.is_file() or not entry.name.endswith((".nc")):
+            continue
+
+        with Dataset(entry.path) as nc:
+            basin_names = nc.variables.get("basin_name")
+            if basin_names is None:
+                continue
+
+            return basin_name_index_map_from_values(basin_names)
+
+    raise ValueError(f"No basin_name variable found in NetCDF files under {parent_dir}")
+
+
+def time_reference_and_units(time_units_string):
+    if "hours since" in time_units_string:
+        return (
+            datetime.strptime(time_units_string, "hours since %Y-%m-%d %H:%M:%S"),
+            "hours",
+        )
+    elif "days since" in time_units_string:
+        return (
+            datetime.strptime(time_units_string, "days since %Y-%m-%d %H:%M:%S"),
+            "days",
+        )
+    else:
+        raise ValueError(f"Unknown time units: {time_units_string}")
+
 
 def timeseries_data(subid, ts_id):
     """Return a timeseries in CSV format, one metadata table and one timeseries table"""
 
     # Get the metadata from the database, build metadata table
-    ts = get_app_session().query(Timeseries).filter_by(id=ts_id).one()
-    var = get_app_session().query(Variable).filter_by(id=ts.variable_id).one()
-    scen = get_app_session().query(Scenario).filter_by(id=ts.scenario_id).one()
-    mod = get_app_session().query(Model).filter_by(id=ts.model_id).one()
+    _timeseries, variable_name, scenario_name, model_name, filename = (
+        get_app_session()
+        .query(
+            Timeseries,
+            Variable.standard_name,
+            Scenario.short_name,
+            Model.short_name,
+            Datafile.filename,
+        )
+        .join(Variable, Variable.id == Timeseries.variable_id)
+        .join(Scenario, Scenario.id == Timeseries.scenario_id)
+        .join(Model, Model.id == Timeseries.model_id)
+        .join(Datafile, Datafile.id == Timeseries.datafile_id)
+        .join(Outlet, Outlet.id == Timeseries.outlet_id)
+        .filter(Outlet.code == subid, Timeseries.id == ts_id)
+        .one()
+    )
 
     metadata = (
         f"Attribute, Value\n"
-        f"Variable, {var.standard_name}\n"
+        f"Variable, {variable_name}\n"
         f"Outlet, {subid}\n"
-        f"Scenario, {scen.short_name}\n"
-        f"Model, {mod.short_name}\n"
+        f"Scenario, {scenario_name}\n"
+        f"Model, {model_name}\n"
         f"\n"
     )
 
-    # Fetch data from netCDF file, build data table
-    df = get_app_session().query(Datafile).filter_by(id=ts.datafile_id).one()
-    nc = Dataset(df.filename)
+    @stream_with_context
+    def generate_rows():
+        yield metadata
 
-    header = f"Time, {var.standard_name} ({nc.variables[var.standard_name].units})\n"
+        with Dataset(filename) as nc:
+            yield f"Time, {variable_name} ({nc.variables[variable_name].units})\n"
 
-    outlet_index = nc.variables["basin_name"][:].tolist().index(subid)
-    # timestamps may be given in either hours or days
-    if "hours since" in nc.variables['time'].units:
-        reference_time = datetime.strptime(nc.variables['time'].units, "hours since %Y-%m-%d %H:%M:%S")
-        time_units = "hours"
-    elif "days since" in nc.variables['time'].units:
-        reference_time = datetime.strptime(nc.variables['time'].units, "days since %Y-%m-%d %H:%M:%S")
-        time_units = "days"
-    else:
-        raise ValueError(f"Unknown time units: {nc.variables['time'].units}")
+            basin_names = nc.variables["basin_name"]
+            outlet_index = basin_name_index_map(os.path.dirname(filename))[subid]
+            basin_name = basin_name_string(basin_names[outlet_index])
+            if basin_name != subid:
+                current_app.logger.warning(
+                    "Cached basin index mismatch for subid %s in %s; rebuilding from file",
+                    subid,
+                    filename,
+                )
+                outlet_index = basin_name_index_map_from_values(basin_names)[subid]
 
-    timestamps = [time_string(reference_time, time_units, t) for t in nc.variables["time"][:]]
-    data = nc.variables[var.standard_name][0 : len(timestamps), outlet_index]
+            time_variable = nc.variables["time"]
+            reference_time, time_units = time_reference_and_units(time_variable.units)
+            num_rows = len(time_variable)
 
-    data_rows = [f"{timestamps[i]}, {data[i]}" for i in range(len(timestamps))]
+            for start in range(0, num_rows, ROW_CHUNK_SIZE):
+                stop = min(start + ROW_CHUNK_SIZE, num_rows)
+                time_values = time_variable[start:stop]
+                data_values = nc.variables[variable_name][start:stop, outlet_index]
 
-    return metadata + header + "\n".join(data_rows)
+                for time_value, data_value in zip(time_values, data_values):
+                    yield f"{time_string(reference_time, time_units, time_value)}, {data_value}\n"
+
+    return Response(generate_rows(), mimetype="text/csv")
