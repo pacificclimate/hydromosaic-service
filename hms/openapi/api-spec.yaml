@@ -22,8 +22,37 @@ tags:
     description: A General Circulation Model, Regional Circulation Model, or aggregated ensemble thereof
   - name: Scenario
     description: A Shared Socioeconomic Pathway or Representative Concentration Pathway
+  - name: Bulk download
+    description: Extract selected outlet timeseries into one NetCDF file
 
 paths:
+  /bulk-downloads:
+    post:
+      summary: download multiple outlet timeseries
+      description: |
+        Extract timeseries for the supplied outlet subIDs. Hydromosaic does not
+        calculate upstream or downstream topology; callers must supply the complete
+        desired outlet list. The selected model, scenario, and variable identify the
+        source Datafile, and the requested outlet columns are extracted in the
+        supplied order.
+      tags:
+        - Bulk download
+        - Timeseries
+      operationId: hms.api.bulk_downloads.bulk_downloads
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BulkDownloadRequest'
+      responses:
+        200:
+          description: A NetCDF file containing all matching outlets
+          content:
+            application/x-netcdf:
+              schema:
+                type: string
+                format: binary
   /outlets:
     get:
       summary: list all available outlets
@@ -214,6 +243,42 @@ paths:
 
 components:
   schemas:
+    BulkDownloadRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - subids
+        - model
+        - scenario
+        - variable
+        - format
+      properties:
+        subids:
+          description: Outlet subIDs selected by CHYP/BBOX
+          type: array
+          minItems: 1
+          items:
+            type: string
+            minLength: 1
+            maxLength: 128
+            pattern: '^[A-Za-z0-9_.:-]+$'
+        model:
+          type: string
+          minLength: 1
+          maxLength: 128
+        scenario:
+          type: string
+          minLength: 1
+          maxLength: 128
+        variable:
+          type: string
+          minLength: 1
+          maxLength: 128
+          pattern: '^[A-Za-z0-9_.:-]+$'
+        format:
+          type: string
+          enum:
+            - netcdf
     Variable:
       description: metadata describing a variable
       type: object
