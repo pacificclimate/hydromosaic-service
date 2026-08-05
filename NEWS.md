@@ -1,5 +1,11 @@
 # News / Release Notes
 
+## 0.5.0
+
+**2026-Aug-05**
+
+- Add bulk downloads [#16](https://github.com/pacificclimate/hydromosaic-service/pull/16)
+
 ## 0.4.0
 
 **2026-Jun-11**
