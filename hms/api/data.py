@@ -32,7 +32,7 @@ def basin_name_index_map_from_values(basin_names):
     }
 
 
-@lru_cache(maxsize=32) # 32 directory paths
+@lru_cache(maxsize=32)  # 32 directory paths
 def basin_name_index_map(parent_dir):
     for entry in sorted(os.scandir(parent_dir), key=lambda item: item.name):
         if not entry.is_file() or not entry.name.endswith((".nc")):

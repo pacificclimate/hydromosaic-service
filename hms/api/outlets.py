@@ -27,7 +27,9 @@ def timeseries_dict(ts, subid, include_outlet=False):
 def timeseries_query():
     return (
         get_app_session()
-        .query(Timeseries, Variable.standard_name, Scenario.short_name, Model.short_name)
+        .query(
+            Timeseries, Variable.standard_name, Scenario.short_name, Model.short_name
+        )
         .join(Variable, Variable.id == Timeseries.variable_id)
         .join(Scenario, Scenario.id == Timeseries.scenario_id)
         .join(Model, Model.id == Timeseries.model_id)
