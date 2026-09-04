@@ -1,5 +1,11 @@
 # News / Release Notes
 
+## 0.6.0
+
+**2026-Sep-04**
+
+- Security updates [#76](https://github.com/pacificclimate/hydromosaic-service/pull/17)
+
 ## 0.5.0
 
 **2026-Aug-05**
